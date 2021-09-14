@@ -1,12 +1,19 @@
 grammar TestPlan;
 
-plan: 'TestPlan' IDENTIFIER '{' connection '}';
+plan: 'TestPlan' IDENTIFIER '{'
+    attribute*
+    connection
+    step+
+'}';
 connection: 'connection' '{' attribute* '}';
 attribute: IDENTIFIER ':' (value | propertyReference);
+step: IDENTIFIER '{'
+    '}';
 propertyReference: '${' IDENTIFIER '}';
-value: NUMBER | MULTILINE_STRING | STRING | NULL;
+value: NUMBER | TIME_VALUE | ENUM_VALUE | MULTILINE_STRING | STRING | NULL;
 
 NULL: 'null';
+ENUM_VALUE: [A-Z]+;
 IDENTIFIER: [A-Za-z][._\-A-Za-z0-9]*;
 FILE_PATH: WINDOWS_FILE_PATH | UNIX_FILE_PATH;
 WINDOWS_FILE_PATH: ([A-Z] ':\\' (FILENAME '\\')*)? (FILENAME '\\')+ FILENAME?;
@@ -14,8 +21,10 @@ UNIX_FILE_PATH: ('/' (FILENAME '/')*)? (FILENAME '/')+ FILENAME?;
 STRING: DQUOTE (ESC | ~ ["\\])* DQUOTE;
 MULTILINE_STRING: DQUOTE DQUOTE DQUOTE (ESC | '"' | ~["\\])* DQUOTE DQUOTE DQUOTE;
 NUMBER: '-'? INT '.' [0-9] + EXP? | '-'? INT EXP | '-'? INT;
+TIME_VALUE: INT TIME_UNIT;
 WS: [ \t\r\n]+ -> skip;
 
+fragment TIME_UNIT: ('h' | 'm' | 's' | 'ms');
 fragment FILENAME: [._\-A-Za-z0-9]+;
 fragment DQUOTE: '"';
 fragment ESC: '\\' (["\\/bfnrt] | UNICODE);
