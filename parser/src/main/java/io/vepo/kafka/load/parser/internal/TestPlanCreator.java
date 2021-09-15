@@ -4,18 +4,15 @@ import static java.util.Objects.nonNull;
 import static java.util.stream.IntStream.range;
 import static org.apache.commons.text.StringEscapeUtils.unescapeJava;
 
-import io.vepo.kafka.load.exceptions.InvalidTestPlanException;
 import io.vepo.kafka.load.parser.Connection;
 import io.vepo.kafka.load.parser.TestPlan;
+import io.vepo.kafka.load.parser.exceptions.InvalidTestPlanException;
 import io.vepo.kafka.load.parser.generated.TestPlanBaseListener;
 import io.vepo.kafka.load.parser.generated.TestPlanParser;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.function.Function;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import io.vepo.kafka.load.parser.PropertyValue;
 
@@ -87,7 +84,7 @@ public class TestPlanCreator extends TestPlanBaseListener {
 
             removeTabs(lines);
         }
-        return Stream.of(lines).collect(Collectors.joining("\n"));
+        return String.join("\n", lines);
     }
 
     private static String processString(String text) {
