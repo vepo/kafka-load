@@ -24,6 +24,12 @@ public class TestPlanCreator extends TestPlanBaseListener {
     private static final Pattern LINE_START_PATTERN = Pattern.compile("^(\\s+)");
 
     private static final Pattern TIME_VALUE = Pattern.compile("([0-9]+)([a-z]+)");
+    private final TestPlan.TestPlanBuilder builder;
+    private Connection.ConnectionBuilder connectionBuilder;
+
+    public TestPlanCreator() {
+        this.builder = TestPlan.builder();
+    }
 
     private static int timeUnitInMillis(String timeUnit) {
         return switch (timeUnit) {
@@ -39,7 +45,7 @@ public class TestPlanCreator extends TestPlanBaseListener {
         if (nonNull(fn)) {
             var matcher = TIME_VALUE.matcher(valueContext.TIME_VALUE().getText());
             if (matcher.matches()) {
-                fn.apply(Duration.ofMillis(Integer.parseInt(matcher.group(1)) * timeUnitInMillis(matcher.group(2))));
+                fn.apply(Duration.ofMillis(Long.parseLong(matcher.group(1)) * timeUnitInMillis(matcher.group(2))));
             } else {
                 throw new IllegalStateException("Wrong time value!");
             }
@@ -47,19 +53,52 @@ public class TestPlanCreator extends TestPlanBaseListener {
     }
 
     private static <T> void applyNumberValue(TestPlanParser.ValueContext valueContext, Function<Integer, T> fn) {
-        if (nonNull(valueContext.NUMBER())) {
-            if (nonNull(fn)) {
-                fn.apply(Integer.parseInt(valueContext.NUMBER().getText()));
-            }
+        if (nonNull(fn)) {
+            fn.apply(Integer.parseInt(valueContext.NUMBER().getText()));
         }
     }
 
-    private final TestPlan.TestPlanBuilder builder;
+    private static <T> void applyStringValue(TestPlanParser.AttributeContext attributeContext,
+                                             Function<PropertyValue, T> fn) {
+        if (nonNull(attributeContext.value())) {
+            if (nonNull(attributeContext.value().MULTILINE_STRING())) {
+                fn.apply(PropertyValue.fromText(processMultiLineString(attributeContext.value().getText())));
+            } else if (nonNull(attributeContext.value().STRING())) {
+                fn.apply(PropertyValue.fromText(processString(attributeContext.value().getText())));
+            }
+        } else if (nonNull(attributeContext.propertyReference())) {
+            fn.apply(PropertyValue.fromReference(attributeContext.propertyReference().IDENTIFIER().getText()));
+        }
+    }
 
-    private Connection.ConnectionBuilder connectionBuilder;
+    private static String processMultiLineString(String text) {
+        String[] lines = text.substring(3, text.length() - 3).split("\n");
+        if (lines.length > 0) {
 
-    public TestPlanCreator() {
-        this.builder = TestPlan.builder();
+            if (lines[0].trim().isEmpty()) {
+                lines = Arrays.copyOfRange(lines, 1, lines.length);
+            }
+
+            if (lines[lines.length - 1].trim().isEmpty()) {
+                lines = Arrays.copyOfRange(lines, 0, lines.length - 1);
+            }
+
+            removeTabs(lines);
+        }
+        return Stream.of(lines).collect(Collectors.joining("\n"));
+    }
+
+    private static String processString(String text) {
+        return unescapeJava(text.substring(1, text.length() - 1));
+    }
+
+    private static void removeTabs(String[] lines) {
+        Matcher tabMatcher = LINE_START_PATTERN.matcher(lines[0]);
+        if (tabMatcher.find()) {
+            String tabPattern = tabMatcher.group(1);
+            range(0, lines.length).filter(index -> lines[index].startsWith(tabPattern))
+                    .forEach(index -> lines[index] = lines[index].substring(tabPattern.length()));
+        }
     }
 
     public TestPlan buildTestPlan() {
@@ -90,64 +129,22 @@ public class TestPlanCreator extends TestPlanBaseListener {
                     case "rampDown" -> this.builder::rampDown;
                     default -> null;
                 });
+            } else if (nonNull(ctx.value().NUMBER())) {
+                applyNumberValue(ctx.value(), switch (ctx.IDENTIFIER().getText()) {
+                    case "clients" -> this.builder::clients;
+                    default -> null;
+                });
             }
-            applyNumberValue(ctx.value(), switch (ctx.IDENTIFIER().getText()) {
-                case "clients" -> this.builder::clients;
+        } else if (ctx.parent instanceof TestPlanParser.ConnectionContext) {
+            applyStringValue(ctx, switch (ctx.IDENTIFIER().getText()) {
+                case "bootstrapServer" -> connectionBuilder::bootstrapServer;
                 default -> null;
             });
-        } else if (ctx.parent instanceof TestPlanParser.ConnectionContext) {
-            switch (ctx.IDENTIFIER().getText()) {
-                case "bootstrapServer":
-                    if (nonNull(ctx.value())) {
-                        if (nonNull(ctx.value().MULTILINE_STRING())) {
-                            connectionBuilder.bootstrapServer(
-                                    PropertyValue.fromText(processMultiLineString(ctx.value().getText())));
-                        } else if (nonNull(ctx.value().STRING())) {
-                            connectionBuilder
-                                    .bootstrapServer(PropertyValue.fromText(processString(ctx.value().getText())));
-                        }
-                    } else if (nonNull(ctx.propertyReference())) {
-                        connectionBuilder.bootstrapServer(
-                                PropertyValue.fromReference(ctx.propertyReference().IDENTIFIER().getText()));
-                    }
-                    break;
-            }
         }
-
     }
 
     @Override
     public void exitConnection(TestPlanParser.ConnectionContext ctx) {
         this.builder.connection(connectionBuilder.build());
-    }
-
-    private String processMultiLineString(String text) {
-        String[] lines = text.substring(3, text.length() - 3).split("\n");
-        if (lines.length > 0) {
-
-            if (lines[0].trim().isEmpty()) {
-                lines = Arrays.copyOfRange(lines, 1, lines.length);
-            }
-
-            if (lines[lines.length - 1].trim().isEmpty()) {
-                lines = Arrays.copyOfRange(lines, 0, lines.length - 1);
-            }
-
-            removeTabs(lines);
-        }
-        return Stream.of(lines).collect(Collectors.joining("\n"));
-    }
-
-    private String processString(String text) {
-        return unescapeJava(text.substring(1, text.length() - 1));
-    }
-
-    private void removeTabs(String[] lines) {
-        Matcher tabMatcher = LINE_START_PATTERN.matcher(lines[0]);
-        if (tabMatcher.find()) {
-            String tabPattern = tabMatcher.group(1);
-            range(0, lines.length).filter(index -> lines[index].startsWith(tabPattern))
-                    .forEach(index -> lines[index] = lines[index].substring(tabPattern.length()));
-        }
     }
 }

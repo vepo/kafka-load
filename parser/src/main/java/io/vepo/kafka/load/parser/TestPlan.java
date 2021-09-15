@@ -3,7 +3,6 @@ package io.vepo.kafka.load.parser;
 import io.vepo.kafka.load.exceptions.InvalidTestPlanException;
 import java.time.Duration;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 public record TestPlan(String name, Connection connection, int clients, Duration cycleTime, Duration warmUp,
                        Duration execution, Duration rampDown) {
