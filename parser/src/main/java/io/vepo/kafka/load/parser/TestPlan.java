@@ -1,6 +1,6 @@
 package io.vepo.kafka.load.parser;
 
-import io.vepo.kafka.load.exceptions.InvalidTestPlanException;
+import io.vepo.kafka.load.parser.exceptions.InvalidTestPlanException;
 import java.time.Duration;
 import java.util.Objects;
 
