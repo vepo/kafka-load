@@ -4,9 +4,12 @@ import static java.util.Objects.nonNull;
 import static java.util.stream.IntStream.range;
 import static org.apache.commons.text.StringEscapeUtils.unescapeJava;
 
+import io.vepo.kafka.load.parser.Assertion;
 import io.vepo.kafka.load.parser.Connection;
 import io.vepo.kafka.load.parser.Message;
+import io.vepo.kafka.load.parser.MessageAssertion;
 import io.vepo.kafka.load.parser.MessageType;
+import io.vepo.kafka.load.parser.Operator;
 import io.vepo.kafka.load.parser.Step;
 import io.vepo.kafka.load.parser.TestPlan;
 import io.vepo.kafka.load.parser.exceptions.InvalidTestPlanException;
@@ -28,6 +31,7 @@ public class TestPlanCreator extends TestPlanBaseListener {
     private Connection.ConnectionBuilder connectionBuilder;
     private Step.StepBuilder stepBuilder;
     private Message.MessageBuilder messageBuilder;
+    private Assertion.AssertionBuilder assertionBuilder;
 
     public TestPlanCreator() {
         testPlanBuilder = TestPlan.builder();
@@ -95,10 +99,6 @@ public class TestPlanCreator extends TestPlanBaseListener {
                 lines = Arrays.copyOfRange(lines, 1, lines.length);
             }
 
-            if (lines[lines.length - 1].trim().isEmpty()) {
-                lines = Arrays.copyOfRange(lines, 0, lines.length - 1);
-            }
-
             removeTabs(lines);
         }
         return String.join("\n", lines);
@@ -115,6 +115,16 @@ public class TestPlanCreator extends TestPlanBaseListener {
             range(0, lines.length).filter(index -> lines[index].startsWith(tabPattern))
                     .forEach(index -> lines[index] = lines[index].substring(tabPattern.length()));
         }
+    }
+
+    @Override
+    public void enterAssertion(TestPlanParser.AssertionContext ctx) {
+        assertionBuilder = Assertion.builder();
+    }
+
+    @Override
+    public void exitAssertion(TestPlanParser.AssertionContext ctx) {
+        stepBuilder.assertion(assertionBuilder.build());
     }
 
     public TestPlan buildTestPlan() {
@@ -171,7 +181,42 @@ public class TestPlanCreator extends TestPlanBaseListener {
                 case "value" -> messageBuilder::value;
                 default -> null;
             });
+        } else if (ctx.parent instanceof TestPlanParser.AssertionContext) {
+            applyStringValue(ctx, switch (ctx.IDENTIFIER().getText()) {
+                case "topic" -> assertionBuilder::topic;
+                default -> null;
+            });
         }
+    }
+
+    @Override
+    public void exitMessageAssertion(TestPlanParser.MessageAssertionContext ctx) {
+        assertionBuilder.assertion(MessageAssertion.builder()
+                .path(ctx.JSON_PATH().getText())
+                .operator(switch (ctx.OPERATOR().getText()) {
+                    case "==" -> Operator.EQUALS;
+                    default -> throw new IllegalStateException(
+                            "Operator not implemented! operator=" + ctx.OPERATOR().getText());
+                })
+                .value(extractAssertionValue(ctx))
+                .build());
+    }
+
+    private PropertyValue extractAssertionValue(TestPlanParser.MessageAssertionContext ctx) {
+        if (nonNull(ctx.messageAssertionValue())) {
+            if (nonNull(ctx.messageAssertionValue().NUMBER())) {
+                return PropertyValue.fromNumber(ctx.messageAssertionValue().NUMBER().getText());
+            } else if (nonNull(ctx.messageAssertionValue().MULTILINE_STRING())) {
+                return PropertyValue.fromText(processMultiLineString(ctx.messageAssertionValue().getText()));
+            } else if (nonNull(ctx.messageAssertionValue().STRING())) {
+                return PropertyValue.fromText(processString(ctx.messageAssertionValue().getText()));
+            } else if (nonNull(ctx.messageAssertionValue().NULL())) {
+                return PropertyValue.PropertyNullValue.NULL;
+            }
+        } else if (nonNull(ctx.propertyReference())) {
+            return PropertyValue.fromReference(ctx.propertyReference().IDENTIFIER().getText());
+        }
+        throw new IllegalStateException("Type not implemented yet!");
     }
 
     @Override

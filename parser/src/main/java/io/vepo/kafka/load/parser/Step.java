@@ -4,9 +4,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.StringJoiner;
 
-public record Step(String name, Message[] messages) {
+public record Step(String name, Message[] messages, Assertion[] assertions) {
     public static StepBuilder builder() {
         return new StepBuilder();
     }
@@ -14,6 +13,7 @@ public record Step(String name, Message[] messages) {
     public static class StepBuilder {
         private String name;
         private List<Message> messages = new ArrayList<>();
+        private List<Assertion> assertions = new ArrayList<>();
 
         private StepBuilder() {
         }
@@ -28,8 +28,13 @@ public record Step(String name, Message[] messages) {
             return this;
         }
 
+        public StepBuilder assertion(Assertion assertion) {
+            this.assertions.add(assertion);
+            return this;
+        }
+
         public Step build() {
-            return new Step(this.name, messages.toArray(Message[]::new));
+            return new Step(name, messages.toArray(Message[]::new), assertions.toArray(Assertion[]::new));
         }
     }
 
@@ -42,18 +47,20 @@ public record Step(String name, Message[] messages) {
             return false;
         }
         Step step = (Step) o;
-        return Objects.equals(name, step.name) && Arrays.equals(messages, step.messages);
+        return Objects.equals(name, step.name) && Arrays.equals(messages, step.messages) &&
+                Arrays.equals(assertions, step.assertions);
     }
 
     @Override
     public int hashCode() {
         int result = Objects.hash(name);
         result = 31 * result + Arrays.hashCode(messages);
+        result = 31 * result + Arrays.hashCode(assertions);
         return result;
     }
 
     @Override
     public String toString() {
-        return String.format("Step [name=%s, messages=%s]", name, Arrays.deepToString(messages));
+        return String.format("Step [name=%s, messages=%s, assertions=%s]", name, Arrays.deepToString(messages), Arrays.deepToString(assertions));
     }
 }

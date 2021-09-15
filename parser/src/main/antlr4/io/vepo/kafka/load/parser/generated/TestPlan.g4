@@ -7,12 +7,13 @@ plan: 'TestPlan' IDENTIFIER '{'
 '}';
 connection: 'connection' '{' attribute* '}';
 message: 'message' '{' attribute+ '}';
-assertion: 'assertion' '{' attribute+ assertionValue+ '}';
+assertion: 'assertion' '{' attribute+ messageAssertion+ '}';
 attribute: IDENTIFIER ':' (value | propertyReference);
 step: IDENTIFIER '{' message+ assertion+ '}';
 
 propertyReference: '${' IDENTIFIER '}';
-assertionValue: JSON_PATH OPERATOR (NUMBER | MULTILINE_STRING | STRING | NULL);
+messageAssertion: JSON_PATH OPERATOR (messageAssertionValue | propertyReference);
+messageAssertionValue: NUMBER | MULTILINE_STRING | STRING | NULL;
 value: NUMBER | TIME_VALUE | ENUM_VALUE | MULTILINE_STRING | STRING | NULL;
 
 NULL: 'null';
