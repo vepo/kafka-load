@@ -63,7 +63,9 @@ public class TestPlanCreator extends TestPlanBaseListener {
     private static <T, E extends Enum> void applyEnumValue(TestPlanParser.AttributeContext attributeContext,
                                                            Function<E, T> fn,
                                                            Class<E> enumClass) {
-        fn.apply((E) Enum.valueOf(enumClass, attributeContext.value().ENUM_VALUE().getText()));
+        if (nonNull(fn)) {
+            fn.apply((E) Enum.valueOf(enumClass, attributeContext.value().ENUM_VALUE().getText()));
+        }
     }
 
     private static <T> void applyStringValue(TestPlanParser.AttributeContext attributeContext,
