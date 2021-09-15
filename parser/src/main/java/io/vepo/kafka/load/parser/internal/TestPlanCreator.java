@@ -5,6 +5,7 @@ import static java.util.stream.IntStream.range;
 import static org.apache.commons.text.StringEscapeUtils.unescapeJava;
 
 import io.vepo.kafka.load.parser.Connection;
+import io.vepo.kafka.load.parser.Message;
 import io.vepo.kafka.load.parser.MessageType;
 import io.vepo.kafka.load.parser.Step;
 import io.vepo.kafka.load.parser.TestPlan;
@@ -23,12 +24,13 @@ public class TestPlanCreator extends TestPlanBaseListener {
     private static final Pattern LINE_START_PATTERN = Pattern.compile("^(\\s+)");
 
     private static final Pattern TIME_VALUE = Pattern.compile("([0-9]+)([a-z]+)");
-    private final TestPlan.TestPlanBuilder builder;
+    private final TestPlan.TestPlanBuilder testPlanBuilder;
     private Connection.ConnectionBuilder connectionBuilder;
     private Step.StepBuilder stepBuilder;
+    private Message.MessageBuilder messageBuilder;
 
     public TestPlanCreator() {
-        builder = TestPlan.builder();
+        testPlanBuilder = TestPlan.builder();
     }
 
     private static int timeUnitInMillis(String timeUnit) {
@@ -116,7 +118,7 @@ public class TestPlanCreator extends TestPlanBaseListener {
     }
 
     public TestPlan buildTestPlan() {
-        return builder.build();
+        return testPlanBuilder.build();
     }
 
     @Override
@@ -129,7 +131,7 @@ public class TestPlanCreator extends TestPlanBaseListener {
         if (!nonNull(ctx.IDENTIFIER())) {
             throw new InvalidTestPlanException("Test plan without identifier!");
         }
-        builder.name(ctx.IDENTIFIER().getText());
+        testPlanBuilder.name(ctx.IDENTIFIER().getText());
     }
 
     @Override
@@ -137,15 +139,15 @@ public class TestPlanCreator extends TestPlanBaseListener {
         if (ctx.parent instanceof TestPlanParser.PlanContext) {
             if (nonNull(ctx.value().TIME_VALUE())) {
                 applyDurationValue(ctx.value(), switch (ctx.IDENTIFIER().getText()) {
-                    case "cycleTime" -> builder::cycleTime;
-                    case "execution" -> builder::execution;
-                    case "warmUp" -> builder::warmUp;
-                    case "rampDown" -> builder::rampDown;
+                    case "cycleTime" -> testPlanBuilder::cycleTime;
+                    case "execution" -> testPlanBuilder::execution;
+                    case "warmUp" -> testPlanBuilder::warmUp;
+                    case "rampDown" -> testPlanBuilder::rampDown;
                     default -> null;
                 });
             } else if (nonNull(ctx.value().NUMBER())) {
                 applyNumberValue(ctx.value(), switch (ctx.IDENTIFIER().getText()) {
-                    case "clients" -> builder::clients;
+                    case "clients" -> testPlanBuilder::clients;
                     default -> null;
                 });
             }
@@ -162,6 +164,13 @@ public class TestPlanCreator extends TestPlanBaseListener {
                     default -> null;
                 });
             }
+        } else if (ctx.parent instanceof TestPlanParser.MessageContext) {
+            applyStringValue(ctx, switch (ctx.IDENTIFIER().getText()) {
+                case "topic" -> messageBuilder::topic;
+                case "key" -> messageBuilder::key;
+                case "value" -> messageBuilder::value;
+                default -> null;
+            });
         }
     }
 
@@ -171,14 +180,24 @@ public class TestPlanCreator extends TestPlanBaseListener {
     }
 
     @Override
+    public void enterMessage(TestPlanParser.MessageContext ctx) {
+        messageBuilder = Message.builder();
+    }
+
+    @Override
+    public void exitMessage(TestPlanParser.MessageContext ctx) {
+        stepBuilder.message(messageBuilder.build());
+    }
+
+    @Override
     public void exitStep(TestPlanParser.StepContext ctx) {
-        builder.step(stepBuilder.build());
+        testPlanBuilder.step(stepBuilder.build());
         stepBuilder = null;
     }
 
     @Override
     public void exitConnection(TestPlanParser.ConnectionContext ctx) {
-        builder.connection(connectionBuilder.build());
+        testPlanBuilder.connection(connectionBuilder.build());
         connectionBuilder = null;
     }
 }

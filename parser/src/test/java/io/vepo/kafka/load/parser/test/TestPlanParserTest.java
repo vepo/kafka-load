@@ -3,6 +3,7 @@ package io.vepo.kafka.load.parser.test;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.vepo.kafka.load.parser.Connection;
+import io.vepo.kafka.load.parser.Message;
 import io.vepo.kafka.load.parser.MessageType;
 import io.vepo.kafka.load.parser.PropertyValue;
 import io.vepo.kafka.load.parser.Step;
@@ -32,6 +33,15 @@ class TestPlanParserTest {
                                 .build())
                         .step(Step.builder()
                                 .name("Step1")
+                                .message(Message.builder()
+                                        .topic(PropertyValue.fromText("topic-1"))
+                                        .key(PropertyValue.fromReference("index"))
+                                        .value(PropertyValue.fromText("""
+                                                {
+                                                    "key": "value",
+                                                    "index": "${index}"
+                                                }"""))
+                                        .build())
                                 .build())
                         .build(),
                 TestPlanFactory.parse("""
@@ -51,7 +61,7 @@ class TestPlanParserTest {
                             Step1 {
                                 message {
                                     topic: "topic-1"
-                                    key:   "${index}" 
+                                    key:   ${index} 
                                     value: ""\"
                                             {
                                                 "key": "value",
