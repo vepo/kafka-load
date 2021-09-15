@@ -60,19 +60,21 @@ public class TestPlanCreator extends TestPlanBaseListener {
 
     private static <T> void applyStringValue(TestPlanParser.AttributeContext attributeContext,
                                              Function<PropertyValue, T> fn) {
-        if (nonNull(attributeContext.value())) {
-            if (nonNull(attributeContext.value().MULTILINE_STRING())) {
-                fn.apply(PropertyValue.fromText(processMultiLineString(attributeContext.value().getText())));
-            } else if (nonNull(attributeContext.value().STRING())) {
-                fn.apply(PropertyValue.fromText(processString(attributeContext.value().getText())));
+        if (nonNull(fn)) {
+            if (nonNull(attributeContext.value())) {
+                if (nonNull(attributeContext.value().MULTILINE_STRING())) {
+                    fn.apply(PropertyValue.fromText(processMultiLineString(attributeContext.value().getText())));
+                } else if (nonNull(attributeContext.value().STRING())) {
+                    fn.apply(PropertyValue.fromText(processString(attributeContext.value().getText())));
+                }
+            } else if (nonNull(attributeContext.propertyReference())) {
+                fn.apply(PropertyValue.fromReference(attributeContext.propertyReference().IDENTIFIER().getText()));
             }
-        } else if (nonNull(attributeContext.propertyReference())) {
-            fn.apply(PropertyValue.fromReference(attributeContext.propertyReference().IDENTIFIER().getText()));
         }
     }
 
     private static String processMultiLineString(String text) {
-        String[] lines = text.substring(3, text.length() - 3).split("\n");
+        var lines = text.substring(3, text.length() - 3).split("\n");
         if (lines.length > 0) {
 
             if (lines[0].trim().isEmpty()) {
@@ -93,9 +95,9 @@ public class TestPlanCreator extends TestPlanBaseListener {
     }
 
     private static void removeTabs(String[] lines) {
-        Matcher tabMatcher = LINE_START_PATTERN.matcher(lines[0]);
+        var tabMatcher = LINE_START_PATTERN.matcher(lines[0]);
         if (tabMatcher.find()) {
-            String tabPattern = tabMatcher.group(1);
+            var tabPattern = tabMatcher.group(1);
             range(0, lines.length).filter(index -> lines[index].startsWith(tabPattern))
                     .forEach(index -> lines[index] = lines[index].substring(tabPattern.length()));
         }
