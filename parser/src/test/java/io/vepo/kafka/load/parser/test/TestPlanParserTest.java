@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import io.vepo.kafka.load.parser.Connection;
 import io.vepo.kafka.load.parser.MessageType;
 import io.vepo.kafka.load.parser.PropertyValue;
+import io.vepo.kafka.load.parser.Step;
 import io.vepo.kafka.load.parser.TestPlan;
 import io.vepo.kafka.load.parser.TestPlanFactory;
 import java.time.Duration;
@@ -29,6 +30,9 @@ class TestPlanParserTest {
                                 .produces(MessageType.JSON)
                                 .consumes(MessageType.JSON)
                                 .build())
+                        .step(Step.builder()
+                                .name("Step1")
+                                .build())
                         .build(),
                 TestPlanFactory.parse("""
                         TestPlan Test1 {
@@ -45,15 +49,18 @@ class TestPlanParserTest {
                             }
 
                             Step1 {
-                                messages to "topic-1" {
-                                    "${index}": ""\"
-                                    {
-                                        "key": "value",
-                                        "index": "${index}"
-                                    }
-                                    ""\"
+                                message {
+                                    topic: "topic-1"
+                                    key:   "${index}" 
+                                    value: ""\"
+                                            {
+                                                "key": "value",
+                                                "index": "${index}"
+                                            }
+                                            ""\"
                                 }
-                                assertions in "topic-1" {
+                                assertion {
+                                    topic: "topic-1"
                                     $.value.key == "value"
                                 }
                             }

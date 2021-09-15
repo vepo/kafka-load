@@ -6,10 +6,13 @@ plan: 'TestPlan' IDENTIFIER '{'
     step+
 '}';
 connection: 'connection' '{' attribute* '}';
+message: 'message' '{' attribute+ '}';
+assertion: 'assertion' '{' attribute+ assertionValue+ '}';
 attribute: IDENTIFIER ':' (value | propertyReference);
-step: IDENTIFIER '{'
-    '}';
+step: IDENTIFIER '{' message+ assertion+ '}';
+
 propertyReference: '${' IDENTIFIER '}';
+assertionValue: JSON_PATH OPERATOR (NUMBER | MULTILINE_STRING | STRING | NULL);
 value: NUMBER | TIME_VALUE | ENUM_VALUE | MULTILINE_STRING | STRING | NULL;
 
 NULL: 'null';
@@ -22,8 +25,13 @@ STRING: DQUOTE (ESC | ~ ["\\])* DQUOTE;
 MULTILINE_STRING: DQUOTE DQUOTE DQUOTE (ESC | '"' | ~["\\])* DQUOTE DQUOTE DQUOTE;
 NUMBER: '-'? INT '.' [0-9] + EXP? | '-'? INT EXP | '-'? INT;
 TIME_VALUE: INT TIME_UNIT;
+
+JSON_PATH: '$.' ? JSON_FIELD ('.' JSON_FIELD) *;
+OPERATOR: ('==');
+
 WS: [ \t\r\n]+ -> skip;
 
+fragment JSON_FIELD: [A-Za-z_][A-Za-z0-9_]*;
 fragment TIME_UNIT: ('h' | 'm' | 's' | 'ms');
 fragment FILENAME: [._\-A-Za-z0-9]+;
 fragment DQUOTE: '"';

@@ -6,6 +6,7 @@ import static org.apache.commons.text.StringEscapeUtils.unescapeJava;
 
 import io.vepo.kafka.load.parser.Connection;
 import io.vepo.kafka.load.parser.MessageType;
+import io.vepo.kafka.load.parser.Step;
 import io.vepo.kafka.load.parser.TestPlan;
 import io.vepo.kafka.load.parser.exceptions.InvalidTestPlanException;
 import io.vepo.kafka.load.parser.generated.TestPlanBaseListener;
@@ -24,9 +25,10 @@ public class TestPlanCreator extends TestPlanBaseListener {
     private static final Pattern TIME_VALUE = Pattern.compile("([0-9]+)([a-z]+)");
     private final TestPlan.TestPlanBuilder builder;
     private Connection.ConnectionBuilder connectionBuilder;
+    private Step.StepBuilder stepBuilder;
 
     public TestPlanCreator() {
-        this.builder = TestPlan.builder();
+        builder = TestPlan.builder();
     }
 
     private static int timeUnitInMillis(String timeUnit) {
@@ -114,12 +116,12 @@ public class TestPlanCreator extends TestPlanBaseListener {
     }
 
     public TestPlan buildTestPlan() {
-        return this.builder.build();
+        return builder.build();
     }
 
     @Override
     public void enterConnection(TestPlanParser.ConnectionContext ctx) {
-        this.connectionBuilder = Connection.builder();
+        connectionBuilder = Connection.builder();
     }
 
     @Override
@@ -127,7 +129,7 @@ public class TestPlanCreator extends TestPlanBaseListener {
         if (!nonNull(ctx.IDENTIFIER())) {
             throw new InvalidTestPlanException("Test plan without identifier!");
         }
-        this.builder.name(ctx.IDENTIFIER().getText());
+        builder.name(ctx.IDENTIFIER().getText());
     }
 
     @Override
@@ -135,15 +137,15 @@ public class TestPlanCreator extends TestPlanBaseListener {
         if (ctx.parent instanceof TestPlanParser.PlanContext) {
             if (nonNull(ctx.value().TIME_VALUE())) {
                 applyDurationValue(ctx.value(), switch (ctx.IDENTIFIER().getText()) {
-                    case "cycleTime" -> this.builder::cycleTime;
-                    case "execution" -> this.builder::execution;
-                    case "warmUp" -> this.builder::warmUp;
-                    case "rampDown" -> this.builder::rampDown;
+                    case "cycleTime" -> builder::cycleTime;
+                    case "execution" -> builder::execution;
+                    case "warmUp" -> builder::warmUp;
+                    case "rampDown" -> builder::rampDown;
                     default -> null;
                 });
             } else if (nonNull(ctx.value().NUMBER())) {
                 applyNumberValue(ctx.value(), switch (ctx.IDENTIFIER().getText()) {
-                    case "clients" -> this.builder::clients;
+                    case "clients" -> builder::clients;
                     default -> null;
                 });
             }
@@ -164,7 +166,19 @@ public class TestPlanCreator extends TestPlanBaseListener {
     }
 
     @Override
+    public void enterStep(TestPlanParser.StepContext ctx) {
+        stepBuilder = Step.builder().name(ctx.IDENTIFIER().getText());
+    }
+
+    @Override
+    public void exitStep(TestPlanParser.StepContext ctx) {
+        builder.step(stepBuilder.build());
+        stepBuilder = null;
+    }
+
+    @Override
     public void exitConnection(TestPlanParser.ConnectionContext ctx) {
-        this.builder.connection(connectionBuilder.build());
+        builder.connection(connectionBuilder.build());
+        connectionBuilder = null;
     }
 }

@@ -2,10 +2,12 @@ package io.vepo.kafka.load.parser;
 
 import io.vepo.kafka.load.parser.exceptions.InvalidTestPlanException;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public record TestPlan(String name, Connection connection, int clients, Duration cycleTime, Duration warmUp,
-                       Duration execution, Duration rampDown) {
+                       Duration execution, Duration rampDown, List<Step> steps) {
     public static class TestPlanBuilder {
 
         private String name;
@@ -15,6 +17,7 @@ public record TestPlan(String name, Connection connection, int clients, Duration
         private Duration warmUp = Duration.ZERO;
         private Duration execution = Duration.ofSeconds(1);
         private Duration rampDown = Duration.ZERO;
+        private List<Step> steps = new ArrayList<>();
 
         private TestPlanBuilder() {
         }
@@ -62,9 +65,14 @@ public record TestPlan(String name, Connection connection, int clients, Duration
             return this;
         }
 
+        public TestPlanBuilder step(Step step) {
+            this.steps.add(step);
+            return this;
+        }
+
         public TestPlan build() {
             return new TestPlan(this.name, this.connection, this.clients, this.cycleTime, this.warmUp, this.execution,
-                    this.rampDown);
+                    this.rampDown, this.steps);
         }
     }
 
