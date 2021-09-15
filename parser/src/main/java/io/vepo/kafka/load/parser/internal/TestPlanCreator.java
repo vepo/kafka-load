@@ -1,5 +1,6 @@
 package io.vepo.kafka.load.parser.internal;
 
+import static io.vepo.kafka.load.parser.PropertyValue.NULL;
 import static java.util.Objects.nonNull;
 import static java.util.stream.IntStream.range;
 import static org.apache.commons.text.StringEscapeUtils.unescapeJava;
@@ -211,7 +212,7 @@ public class TestPlanCreator extends TestPlanBaseListener {
             } else if (nonNull(ctx.messageAssertionValue().STRING())) {
                 return PropertyValue.fromText(processString(ctx.messageAssertionValue().getText()));
             } else if (nonNull(ctx.messageAssertionValue().NULL())) {
-                return PropertyValue.PropertyNullValue.NULL;
+                return NULL;
             }
         } else if (nonNull(ctx.propertyReference())) {
             return PropertyValue.fromReference(ctx.propertyReference().IDENTIFIER().getText());

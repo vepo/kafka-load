@@ -2,8 +2,6 @@ package io.vepo.kafka.load.parser;
 
 import static io.vepo.kafka.load.parser.exceptions.InvalidTestPlanException.requireNonNull;
 
-import io.vepo.kafka.load.parser.exceptions.InvalidTestPlanException;
-
 public record Connection(PropertyValue bootstrapServer, MessageType produces, MessageType consumes) {
     public static class ConnectionBuilder {
         private PropertyValue bootstrapServer;

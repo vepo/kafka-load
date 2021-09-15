@@ -1,7 +1,5 @@
 package io.vepo.kafka.load.parser.exceptions;
 
-import io.vepo.kafka.load.parser.PropertyValue;
-import io.vepo.kafka.load.parser.Step;
 import java.util.List;
 
 public class InvalidTestPlanException extends RuntimeException {
