@@ -3,13 +3,13 @@ grammar TestPlan;
 plan: 'TestPlan' IDENTIFIER '{'
     attribute*
     connection
-    step+
+    step*
 '}';
 connection: 'connection' '{' attribute* '}';
 message: 'message' '{' attribute+ '}';
 assertion: 'assertion' '{' attribute+ messageAssertion+ '}';
 attribute: IDENTIFIER ':' (value | propertyReference);
-step: IDENTIFIER '{' message+ assertion+ '}';
+step: IDENTIFIER '{' message+ assertion* '}';
 
 propertyReference: '${' IDENTIFIER '}';
 messageAssertion: JSON_PATH OPERATOR (messageAssertionValue | propertyReference);

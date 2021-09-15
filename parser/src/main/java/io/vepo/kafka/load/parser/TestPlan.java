@@ -1,5 +1,7 @@
 package io.vepo.kafka.load.parser;
 
+import static io.vepo.kafka.load.parser.exceptions.InvalidTestPlanException.requiredNotEmpty;
+
 import io.vepo.kafka.load.parser.exceptions.InvalidTestPlanException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -72,6 +74,7 @@ public record TestPlan(String name, Connection connection, int clients, Duration
         }
 
         public TestPlan build() {
+            requiredNotEmpty(this.steps, "No Step defined! You should define at least one step.");
             return new TestPlan(this.name, this.connection, this.clients, this.cycleTime, this.warmUp, this.execution,
                     this.rampDown, this.steps.toArray(Step[]::new));
         }

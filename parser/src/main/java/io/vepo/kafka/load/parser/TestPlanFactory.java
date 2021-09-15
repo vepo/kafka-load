@@ -12,7 +12,7 @@ public class TestPlanFactory {
     private TestPlanFactory() {
     }
 
-    public static TestPlan parse(String contents) {
+    public static TestPlan parseTestPlan(String contents) {
         TestPlanParser parser = new TestPlanParser(
                 new CommonTokenStream(new TestPlanLexer(CharStreams.fromString(contents))));
         ParseTreeWalker walker = new ParseTreeWalker();

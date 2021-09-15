@@ -1,5 +1,9 @@
 package io.vepo.kafka.load.parser;
 
+import static io.vepo.kafka.load.parser.exceptions.InvalidTestPlanException.requireNonNull;
+
+import io.vepo.kafka.load.parser.exceptions.InvalidTestPlanException;
+
 public record Connection(PropertyValue bootstrapServer, MessageType produces, MessageType consumes) {
     public static class ConnectionBuilder {
         private PropertyValue bootstrapServer;
@@ -25,7 +29,8 @@ public record Connection(PropertyValue bootstrapServer, MessageType produces, Me
         }
 
         public Connection build() {
-            return new Connection(this.bootstrapServer, this.produces, this.consumes);
+            requireNonNull(bootstrapServer, "Missing \"bootstrapServer\" on connection!");
+            return new Connection(bootstrapServer, produces, consumes);
         }
     }
 
