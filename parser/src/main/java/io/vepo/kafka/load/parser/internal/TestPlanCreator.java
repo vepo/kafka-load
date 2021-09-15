@@ -5,6 +5,7 @@ import static java.util.stream.IntStream.range;
 import static org.apache.commons.text.StringEscapeUtils.unescapeJava;
 
 import io.vepo.kafka.load.parser.Connection;
+import io.vepo.kafka.load.parser.MessageType;
 import io.vepo.kafka.load.parser.TestPlan;
 import io.vepo.kafka.load.parser.exceptions.InvalidTestPlanException;
 import io.vepo.kafka.load.parser.generated.TestPlanBaseListener;
@@ -53,6 +54,16 @@ public class TestPlanCreator extends TestPlanBaseListener {
         if (nonNull(fn)) {
             fn.apply(Integer.parseInt(valueContext.NUMBER().getText()));
         }
+    }
+
+    private static boolean isEnum(TestPlanParser.AttributeContext attributeContext) {
+        return nonNull(attributeContext.value()) && nonNull(attributeContext.value().ENUM_VALUE());
+    }
+
+    private static <T, E extends Enum> void applyEnumValue(TestPlanParser.AttributeContext attributeContext,
+                                                           Function<E, T> fn,
+                                                           Class<E> enumClass) {
+        fn.apply((E) Enum.valueOf(enumClass, attributeContext.value().ENUM_VALUE().getText()));
     }
 
     private static <T> void applyStringValue(TestPlanParser.AttributeContext attributeContext,
@@ -135,10 +146,18 @@ public class TestPlanCreator extends TestPlanBaseListener {
                 });
             }
         } else if (ctx.parent instanceof TestPlanParser.ConnectionContext) {
-            applyStringValue(ctx, switch (ctx.IDENTIFIER().getText()) {
-                case "bootstrapServer" -> connectionBuilder::bootstrapServer;
-                default -> null;
-            });
+            if (isEnum(ctx)) {
+                applyEnumValue(ctx, switch (ctx.IDENTIFIER().getText()) {
+                    case "produces" -> connectionBuilder::produces;
+                    case "consumes" -> connectionBuilder::consumes;
+                    default -> null;
+                }, MessageType.class);
+            } else {
+                applyStringValue(ctx, switch (ctx.IDENTIFIER().getText()) {
+                    case "bootstrapServer" -> connectionBuilder::bootstrapServer;
+                    default -> null;
+                });
+            }
         }
     }
 

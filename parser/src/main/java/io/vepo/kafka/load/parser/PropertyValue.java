@@ -9,4 +9,5 @@ public interface PropertyValue {
     static PropertyValue fromReference(String property) {
         return new PropertyReferenceValue(property);
     }
+
 }
