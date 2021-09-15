@@ -8,6 +8,10 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
 public class TestPlanFactory {
+
+    private TestPlanFactory() {
+    }
+
     public static TestPlan parse(String contents) {
         TestPlanParser parser = new TestPlanParser(
                 new CommonTokenStream(new TestPlanLexer(CharStreams.fromString(contents))));
