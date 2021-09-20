@@ -20,9 +20,9 @@ public class Configuration {
     }
 
     public static Configuration fromFile(File file) {
-        try {
-            Properties configs = new Properties();
-            configs.load(new FileReader(file));
+        try (var reader = new FileReader(file)) {
+            var configs = new Properties();
+            configs.load(reader);
             return new Configuration(configs);
         } catch (IOException ioe) {
             throw new ExecutorException("Could not load configuration file!", ioe);
