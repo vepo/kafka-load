@@ -7,6 +7,10 @@ public class InvalidTestPlanException extends RuntimeException {
         super(reason);
     }
 
+    public InvalidTestPlanException(String reason, Exception cause) {
+        super(reason, cause);
+    }
+
     public static <T> void requireNonNull(T value, String message) {
         if (value == null) {
             throw new InvalidTestPlanException(message);
